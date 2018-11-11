@@ -1,26 +1,47 @@
-#!/usr/bin/python3
-import argparse
+#!/usr/bin/env python3
 import subprocess
+import argparse
 import resource
-from argparse import Namespace
-def give_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('src', nargs='+', help= 'file_src')
-    parser.add_argument('-m', '--mem', action= 'store_true', help= 'outputs the memory allocation of the target program')
-    parser.add_argument('-t', '--time', action= 'store_true', help= 'outputs the execution time (run-time) of the target program')
-    parser.add_argument('-n', action= 'store_true', help= 'outputs the number of function calls of the target program')
-    args = parser.parse_args()
-    return args
+import runpy
+import cProfile, pstats
 
-def option():
-    Res = resource.getrusage(resource.RUSAGE_CHILDREN)
+
+def take_args():
+   parser = argparse.ArgumentParser()
+   parser.add_argument("src", nargs='+', help="src_file")
+   parser.add_argument("-t",'--time', action='store_true', default=True)
+   parser.add_argument("-m",'--memory', action='store_true')
+   parser.add_argument("-n",'--numfunc', action='store_true')
+   return parser.parse_args()
+
+
+def launch_file(src_file):
+    file = " ".join(src_file)
+    run_file = subprocess.run([file], shell=True)
+    # runpy.run_module("smart_db", run_name="__main__")
+    # run_time_child = resource.getrusage(resource.RUSAGE_SELF).ru_utime
+    # print('run-time:', run_time_child)
+
+
+def option_of_file():
+    resource_consumed_child = resource.getrusage(resource.RUSAGE_SELF)
     if args.time:
-        print('run-time:', Res.ru_utime)
+       run_time_child = resource_consumed_child.ru_utime
+       print('run-time:', run_time_child)
+    if args.memory:
+        memory_child = resource_consumed_child.ru_maxrss
+        print('Memory usage: ' + str(memory_child) + ' KB' )
+    # if args.numfunc:
+    #     pr = cProfile.Profile()
+    #     pr.enable()
+    #     runpy.run_module("smart_db", run_name="__main__")
+    #     pr.disable()
+    #     sortby = 'cumulative'
+    #     ps = pstats.Stats(pr).sort_stats(sortby)
+    #     ps.print_stats()
+    #     print(ps)
 
-def run_file(file_src):
-    subprocess.run(file_src,shell=True)
-
-args = give_args()
-file = args.src
-run_file(file)
-option()
+if __name__ == '__main__':
+    args = take_args()
+    launch_file(args.src)
+    option_of_file()
